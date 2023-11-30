@@ -1,16 +1,22 @@
-# This is a sample Python script.
-
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+from PIL import Image
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+def greyscale(image):
+    # go through each pixel and change it to black and white
+    for x in range(image.width):
+        for y in range(image.height):
+            r, g, b = image.getpixel((x, y))
+
+            # calculate the average value of rgb
+            avg = (r + g + b) // 3
+
+            # set the pixel to the new color 'avg'
+            image.putpixel((x, y), (avg, avg, avg))
+
+    return image
 
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+input_image = Image.open('images/butterfly.jpg')
+output_image = greyscale(input_image)
+output_image.save('output.jpg')
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
