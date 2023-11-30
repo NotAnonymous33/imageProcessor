@@ -3,11 +3,11 @@ from collections import OrderedDict
 import numpy as np
 
 
-def greyscale(image):
+def greyscale(image, sensitivity=1):
     # Go through each pixel and change it to black and white
     for y in range(image.height):
         for x in range(image.width):
-            r, g, b = image.getpixel((x, y))
+            r, g, b = map(lambda i: sensitivity * round(i/sensitivity), image.getpixel((x, y)))
 
             # calculate the average value of rgb
             avg = (r + g + b) // 3
@@ -52,7 +52,7 @@ def gaussian_kernel(size, sigma):
 
 
 def gaussian_blur(image, strength, sigma):
-    # Convert PIL image to numpy array
+    # Blur the image with a Gaussian kernel
     img_array = np.array(image)
     height = image.height
     width = image.width
@@ -62,10 +62,8 @@ def gaussian_blur(image, strength, sigma):
     kernel_size = 2 * strength + 1
     kernel = gaussian_kernel(kernel_size, sigma)
 
-    # Initialize the output array
     output_array = np.zeros_like(img_array)
 
-    # Apply Gaussian blur
     for y in range(height):
         for x in range(width):
             x_min = max(0, x - strength)
@@ -88,7 +86,48 @@ def gaussian_blur(image, strength, sigma):
     return Image.fromarray(output_array.astype(np.uint8))
 
 
+def edge_detection(image, sensitivity=1):
+    # Find edges in the image
+    grey_image = greyscale(image, sensitivity)
+    grey_array = np.array(grey_image)
+
+    if len(grey_array.shape) == 3:
+        grey_array = grey_array[:, :, 0]
+
+    vertical_kernel = np.array([[0.25, 0, -0.25], [0.5, 0, -0.5], [0.25, 0, -0.25]])
+    horizontal_kernel = np.array([[0.25, 0.5, 0.25], [0, 0, 0], [-0.25, -0.5, -0.25]])
+
+    edges_x = np.abs(convolution(grey_array, vertical_kernel))
+    edges_y = np.abs(convolution(grey_array, horizontal_kernel))
+    edges = np.hypot(edges_x, edges_y)
+
+    edges = (edges / np.max(edges) * 255).astype(np.uint8)
+    edge_image = Image.fromarray(edges)
+
+    return edge_image
+
+
+def convolution(image, kernel):
+    kernel_height, kernel_width = kernel.shape
+    image_height, image_width = image.shape
+
+    output = np.zeros_like(image)
+
+    pad_height = kernel_height // 2
+    pad_width = kernel_width // 2
+    padded_image = np.pad(image, ((pad_height, pad_height), (pad_width, pad_width)))
+
+    for i in range(image_height):
+        for j in range(image_width):
+            output[i, j] = np.sum(kernel * padded_image[i:i + kernel_height, j:j + kernel_width])
+
+    return output
+
 input_image = Image.open('images/butterfly.jpg')
 # output_image = linear_blur(input_image, 0.1)
-output_image = gaussian_blur(input_image, 0.4, 10)
+# output_image = gaussian_blur(input_image, 0.4, 10)
+# output_image = greyscale(input_image, 255)
+output_image = edge_detection(input_image, sensitivity=255)
+
 output_image.save('output.jpg')
+
