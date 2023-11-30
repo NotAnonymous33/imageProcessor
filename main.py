@@ -19,30 +19,29 @@ def greyscale(image):
 
 
 def linear_blur(image, strength):
-    # make each pixel the average of the pixels around it
+    img_array = np.array(image)
+    output_array = np.zeros_like(img_array)
 
-    # cache the recent most strength * strength pixels
-    cache = OrderedDict({(-i, -i): (0, 0, 0) for i in range(strength * strength)})
+    height = image.height
+    width = image.width
 
-    for y in range(image.height):
-        print(y)
-        for x in range(image.width):
-            surrounding_pixels = []
-            for i in range(-strength, strength + 1):
-                for j in range(-strength, strength + 1):
-                    try:
-                        if (x + i, y + j) not in cache:
-                            cache[(x + i, y + j)] = image.getpixel((x + i, y + j))
-                        surrounding_pixels.append(cache[(x + i, y + j)])
-                        cache.popitem(last=False)
-                    except IndexError:
-                        pass
-            output_pixel = tuple(map(lambda pixel_list: sum(pixel_list) // len(pixel_list), zip(*surrounding_pixels)))
-            image.putpixel((x, y), output_pixel)
-    return image
+    strength = int(strength * min(height, width))
 
+    for y in range(height):
+        for x in range(width):
+            x_min = max(0, x - strength)
+            x_max = min(width, x + strength + 1)
+            y_min = max(0, y - strength)
+            y_max = min(height, y + strength + 1)
+
+            # Extract the surrounding box and calculate the mean
+            surrounding_box = img_array[y_min:y_max, x_min:x_max]
+            output_array[y, x] = np.mean(surrounding_box, axis=(0, 1)).astype(img_array.dtype)
+
+    # Convert the numpy array back to PIL image
+    return Image.fromarray(output_array)
 
 
-input_image = Image.open('images/smallEarth.jpg')
-output_image = linear_blur(input_image, 10)
+input_image = Image.open('images/butterfly.jpg')
+output_image = linear_blur(input_image, 0.1)
 output_image.save('output.jpg')
